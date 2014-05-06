@@ -70,14 +70,12 @@ module Formtastic
             # We can't determine an appropriate value for :greater_than with a float/decimal column
             raise IndeterminableMinimumAttributeError if validation.options[:greater_than] && column? && [:float, :decimal].include?(column.type)
 
-            if validation.options[:greater_than_or_equal_to]
-              return (validation.options[:greater_than_or_equal_to].call(object)) if validation.options[:greater_than_or_equal_to].kind_of?(Proc)
-              return (validation.options[:greater_than_or_equal_to])
+            if rule = validation.options[:greater_than_or_equal_to]
+              return extract_value_from_validation_rule(rule)
             end
 
-            if validation.options[:greater_than]
-              return (validation.options[:greater_than].call(object) + 1) if validation.options[:greater_than].kind_of?(Proc)
-              return (validation.options[:greater_than] + 1)
+            if rule = validation.options[:greater_than]
+              return extract_value_from_validation_rule(rule).try(:+, 1)
             end
           end
         end
@@ -91,14 +89,12 @@ module Formtastic
             # We can't determine an appropriate value for :greater_than with a float/decimal column
             raise IndeterminableMaximumAttributeError if validation.options[:less_than] && column? && [:float, :decimal].include?(column.type)
 
-            if validation.options[:less_than_or_equal_to]
-              return (validation.options[:less_than_or_equal_to].call(object)) if validation.options[:less_than_or_equal_to].kind_of?(Proc)
-              return (validation.options[:less_than_or_equal_to])
+            if rule = validation.options[:less_than_or_equal_to]
+              return extract_value_from_validation_rule(rule)
             end
 
-            if validation.options[:less_than]
-              return ((validation.options[:less_than].call(object)) - 1) if validation.options[:less_than].kind_of?(Proc)
-              return (validation.options[:less_than] - 1)
+            if rule = validation.options[:less_than]
+              return extract_value_from_validation_rule(rule).try(:-, 1)
             end
           end
         end
@@ -188,6 +184,19 @@ module Formtastic
 
         def limit
           validation_limit || column_limit
+        end
+
+        private
+
+        def extract_value_from_validation_rule(rule)
+          case rule
+          when Proc
+            rule.call(object)
+          when Symbol
+            object.send(rule)
+          else
+            rule
+          end
         end
 
       end
